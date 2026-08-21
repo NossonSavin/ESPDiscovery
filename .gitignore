@@ -1,0 +1,8 @@
+# Git ignore for Arduino / PlatformIO
+.pio/
+.vscode/
+*.o
+*.a
+*.bin
+.DS_Store
+Thumbs.db
