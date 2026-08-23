@@ -25,7 +25,7 @@ public:
     // If useFreeRTOSTask is true (ESP32 only), spawns a lightweight background task
     bool begin(const String &deviceName, uint16_t webPort = 80, const String &firmwareVersion = "1.0.0", uint16_t udpPort = DEFAULT_DISCOVERY_PORT, bool useFreeRTOSTask = true);
     
-    // Call in loop() if useFreeRTOSTask is false
+    // Call in loop() if useFreeRTOSTask is false or to poll directly
     void handle();
 
     // Stop discovery service
@@ -44,10 +44,12 @@ private:
     String _deviceName;
     String _firmwareVersion;
     String _chipModel;
+    IPAddress _lastIp;
     uint16_t _webPort;
     uint16_t _udpPort;
     bool _running;
     bool _usingTask;
+    bool _isBound;
 
 #if defined(ESP32)
     TaskHandle_t _taskHandle;

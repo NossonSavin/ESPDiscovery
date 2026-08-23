@@ -7,6 +7,7 @@ ESPDiscovery::ESPDiscovery()
     , _udpPort(DEFAULT_DISCOVERY_PORT)
     , _running(false)
     , _usingTask(false)
+    , _isBound(false)
 #if defined(ESP32)
     , _taskHandle(nullptr)
 #endif
@@ -49,14 +50,17 @@ bool ESPDiscovery::begin(const String &deviceName, uint16_t webPort, const Strin
     _webPort = webPort;
     _firmwareVersion = firmwareVersion;
     _udpPort = udpPort;
-
-    if (!_udp.begin(_udpPort)) {
-        Serial.printf("[ESPDiscovery] Failed to bind to UDP port %u\n", _udpPort);
-        return false;
-    }
-
     _running = true;
-    Serial.printf("[ESPDiscovery] Listening for discovery queries on UDP port %u (Name: '%s')\n", _udpPort, _deviceName.c_str());
+    _isBound = false;
+
+    if (WiFi.status() == WL_CONNECTED) {
+        if (_udp.begin(_udpPort)) {
+            _isBound = true;
+            _lastIp = WiFi.localIP();
+            Serial.printf("[ESPDiscovery] Listening for discovery queries on UDP port %u (Name: '%s', IP: %s)\n", 
+                          _udpPort, _deviceName.c_str(), _lastIp.toString().c_str());
+        }
+    }
 
 #if defined(ESP32)
     if (useFreeRTOSTask) {
@@ -91,13 +95,34 @@ void ESPDiscovery::_taskWorker(void *parameter) {
 #endif
 
 void ESPDiscovery::handle() {
-    if (_running && !_usingTask) {
+    if (_running) {
         _processIncomingPackets();
     }
 }
 
 void ESPDiscovery::_processIncomingPackets() {
     if (!_running) return;
+
+    if (WiFi.status() != WL_CONNECTED) {
+        if (_isBound) {
+            _udp.stop();
+            _isBound = false;
+        }
+        return;
+    }
+
+    // Bind or re-bind if IP changed or not yet bound
+    IPAddress currentIp = WiFi.localIP();
+    if (!_isBound || currentIp != _lastIp) {
+        _udp.stop();
+        if (_udp.begin(_udpPort)) {
+            _isBound = true;
+            _lastIp = currentIp;
+            Serial.printf("[ESPDiscovery] UDP listener active on port %u (IP: %s)\n", _udpPort, currentIp.toString().c_str());
+        } else {
+            return;
+        }
+    }
 
     int packetSize = _udp.parsePacket();
     if (packetSize <= 0) return;
@@ -125,6 +150,7 @@ void ESPDiscovery::_processIncomingPackets() {
 
 void ESPDiscovery::stop() {
     _running = false;
+    _isBound = false;
 #if defined(ESP32)
     if (_taskHandle != nullptr) {
         vTaskDelete(_taskHandle);
