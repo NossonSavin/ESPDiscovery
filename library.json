@@ -1,8 +1,8 @@
 {
   "name": "ESPDiscovery",
-  "version": "1.0.0",
-  "keywords": "esp32, esp8266, udp, discovery, network, lan, mdns, iot",
-  "description": "Lightweight UDP broadcast network discovery library for ESP32 and ESP8266 devices. Enables instant discovery without relying on mDNS.",
+  "version": "2.0.0",
+  "keywords": "esp32, esp8266, mqtt, discovery, network, lan, iot, pubsubclient",
+  "description": "Zero-configuration MQTT network discovery library for ESP32 and ESP8266 devices. Replaces UDP/mDNS with reliable MQTT retained announcements.",
   "authors": [
     {
       "name": "Nosson Savin",
@@ -11,6 +11,9 @@
   ],
   "license": "MIT",
   "homepage": "https://github.com/NossonSavin/ESPDiscovery",
+  "dependencies": {
+    "knolleary/PubSubClient": "^2.8"
+  },
   "frameworks": "arduino",
   "platforms": ["espressif32", "espressif8266"]
 }
